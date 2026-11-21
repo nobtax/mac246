@@ -1,29 +1,36 @@
 
-
 import re
 from collections import Counter
 
 LOG_FILE = "sample_logs/ssh_test.log"
 THRESHOLD = 5
 
-def monitor_logs():
+
+def analyze_logs(log_file):
     failed_attempts = Counter()
 
+    with open(log_file, "r", encoding="utf-8") as file:
+        for line in file:
+            if "Failed password" in line:
+                match = re.search(
+                    r"from (\d{1,3}(?:\.\d{1,3}){3})",
+                    line
+                )
+                if match:
+                    failed_attempts[match.group(1)] += 1
+
+    return failed_attempts
+
+
+def monitor_logs():
     try:
-        with open(LOG_FILE, "r") as file:
-            for line in file:
-                if "Failed password" in line:
-                    match = re.search(
-                        r"from (\d{1,3}(?:\.\d{1,3}){3})",
-                        line
-                    )
-                    if match:
-                        failed_attempts[match.group(1)] += 1
+        failed_attempts = analyze_logs(LOG_FILE)
 
         print("\n=== SSH Security Log Monitor ===")
 
         if not failed_attempts:
             print("No failed SSH login attempts found.")
+            return
 
         for ip, count in failed_attempts.items():
             print(f"IP Address: {ip}")
@@ -42,3 +49,4 @@ def monitor_logs():
 
 if __name__ == "__main__":
     monitor_logs()
+               
